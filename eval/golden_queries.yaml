@@ -1,0 +1,27 @@
+# Small golden set. Kept deliberately narrow (see STATEMENT.md for why):
+# - compound: should make the planner emit >1 sub-query
+# - simple: single, well-scoped factual question
+# - thin_evidence: obscure/ambiguous enough to plausibly trigger resynthesis
+- id: compound-1
+  category: compound
+  question: "What changed in the AI search market this year?"
+
+- id: compound-2
+  category: compound
+  question: "How are large companies approaching AI agent evaluation and observability right now?"
+
+- id: simple-1
+  category: simple
+  question: "What is Tavily's search API used for?"
+
+- id: simple-2
+  category: simple
+  question: "Who founded Anthropic?"
+
+- id: thin-evidence-1
+  category: thin_evidence
+  question: "What is the exact market share of Tavily among AI search API providers?"
+
+- id: thin-evidence-2
+  category: thin_evidence
+  question: "What was the precise attendance count at the most recent NeurIPS conference?"
