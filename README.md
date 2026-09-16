@@ -58,7 +58,10 @@ Requires Python 3.11+ and [`uv`](https://docs.astral.sh/uv/).
 cp .env.example .env
 # fill in TAVILY_API_KEY (https://app.tavily.com) and NEBIUS_API_KEY (https://tokenfactory.nebius.com)
 
-uv sync --extra dev            # add --extra tracing for optional OpenTelemetry support
+uv sync --extra dev --extra tracing   # both extras: `uv sync` isn't additive across
+                                       # separate calls, so installing them together here
+                                       # avoids a later sync silently dropping pytest.
+                                       # Tracing stays off at runtime unless ENABLE_TRACING=1.
 ```
 
 ## CLI usage
@@ -163,12 +166,12 @@ for this build.
 ## Reproduction steps
 
 1. `cp .env.example .env` and fill in both API keys.
-2. `uv sync --extra dev`
+2. `uv sync --extra dev --extra tracing`
 3. `uv run pytest` — confirms the pipeline logic without needing real keys.
 4. `uv run cli.py "your question"` — a real end-to-end run.
 5. `uv run eval/run_eval.py` — runs the golden set and prints a report.
-6. Optional: `uv sync --extra tracing`, set `ENABLE_TRACING=1` and
-   `OTEL_EXPORTER_OTLP_ENDPOINT` in `.env`, point it at a local Phoenix collector.
+6. Optional: set `ENABLE_TRACING=1` and `OTEL_EXPORTER_OTLP_ENDPOINT` in `.env`, point it
+   at a local Phoenix collector — no extra install needed, step 2 already covers it.
 
 ## Repo layout
 
