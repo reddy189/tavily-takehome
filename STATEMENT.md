@@ -1,9 +1,11 @@
 # Technical Statement
 
-> This reflects the implementation as built and tested with mocked LLM/Tavily clients.
-> The pipeline has **not** been run against live Tavily/Nebius APIs yet — no eval
-> results, latency figures, or live-validation claims are included here. `eval/run_eval.py`
-> is written and ready; results will be added once keys are available.
+> Live-validated against real Tavily and Nebius APIs: the full golden set (6 queries) has
+> been run end to end. Summary: 35 total claims, 31/35 (89%) judged `supported` on first
+> pass; 3 of 6 queries triggered the one-shot resynthesis (each over one
+> `partially_supported` claim); zero judge-format mismatches and zero nonexistent
+> citations occurred across the run; latency ranged ~4-22s per query. See "Live validation"
+> below for what this run actually surfaced, including a real defect it caught.
 
 ## The problem
 
@@ -73,6 +75,47 @@ that conservatively marks those claims unsupported — never silently dropped or
 citation that's still invalid after correction can't appear as a working-looking marker
 in the rendered answer, even though it stays fully visible in debug metadata.
 
+## Live validation
+
+Running against real APIs surfaced one genuine, model-specific defect and confirmed the
+grounding mechanism catches real problems, not just constructed test cases.
+
+**The default model had to change, twice, based on evidence, not guesswork.** The
+starter's carried-over default, `moonshotai/Kimi-K2.6`, turned out to leak an internal
+serving-template token (`<|tool_calls_section_begin|>`) into every structured-output tool
+call on this Nebius deployment, breaking JSON parsing for every stage (`plan`,
+`synthesize`, `verify`, `resynthesize`) uniformly. Switching `with_structured_output`'s
+`method` parameter (`json_schema`/`json_mode`) doesn't help — that path errors inside
+`langchain-nebius` itself, independent of model. Querying the account's live model catalog
+directly (rather than guessing names) and testing candidates against the *actual*
+synthesis prompt (not just a short one) surfaced a second, subtler issue: `openai/gpt-oss-120b`
+parsed cleanly on the short `plan` prompt but silently skipped tool-calling — writing valid
+JSON as plain message content instead — once the prompt included a full evidence block.
+`Qwen/Qwen3-235B-A22B-Instruct-2507` was verified reliable on the real synthesis/judge
+workload and is now the default. This is exactly the risk flagged as unverified before any
+live testing happened, and it materialized in a more specific way than expected (two
+distinct failure modes, not one) — worth noting as a concrete argument for why "unverified
+against live behavior" belongs in a limitations section until it's actually been run.
+
+**Resynthesis caught a real overclaim, not a synthetic one.** On the compound query "what
+changed in the AI search market this year," the initial synthesis presented two distinct
+forecasts' CAGR figures (16.69% and 27.30%) as a single unqualified range, as if they were
+one fact rather than two different estimates. The judge marked it `partially_supported`,
+flagging that the combined range wasn't cleanly backed by a single source. Resynthesis
+fired exactly once, and the corrected answer split it into two properly attributed
+statements — the market-size range as one claim, and the two CAGR figures as separate,
+source-attributed estimates ("one forecast... while another forecast..."). This happened
+without any special-casing for this scenario — it's the designed mechanism working on a
+case it wasn't built for in advance.
+
+**One honest correction to the eval design's own assumption:** the golden set's "compound"
+category was meant to exercise the planner's multi-query decomposition, but in this run
+the planner judged both compound questions well-served by a single, well-targeted query
+(with `topic`/`time_range` set appropriately) rather than splitting them. That's a valid
+planning judgment call, not a bug — the prompt only asks it to split on genuinely distinct
+facets — but it means the golden set doesn't *guarantee* multi-query planning fires; it
+only creates the opportunity for it to.
+
 ## Trade-offs accepted
 
 - No agent loop → loses multi-hop adaptivity in exchange for determinism, testability,
@@ -97,8 +140,9 @@ in the rendered answer, even though it stays fully visible in debug metadata.
 - Evidence given to synthesis and the judge is Tavily's snippet only
   (`include_raw_content=False`); grounding is only as good as that snippet, never full
   page content.
-- The default model (carried over from the original starter) is unverified against
-  Nebius's current model catalog — the first real risk once live calls are made.
+- The default model has been live-validated on the golden set (see "Live validation")
+  but only against 6 queries in one session — not enough runs to rule out occasional
+  tool-calling failures recurring under different prompt shapes or load.
 - The JSONL run log is a plain file append with no concurrency lock — fine for this
   single-process CLI/eval usage, not safe for concurrent writers.
 - `nonexistent_citations` bundles two distinct cases (a fabricated citation id, and a
@@ -125,8 +169,10 @@ in the rendered answer, even though it stays fully visible in debug metadata.
 - Consider fetching full page content for higher-stakes queries where a snippet isn't
   enough to judge support confidently — as an explicit, opt-in cost/latency trade-off,
   not a silent default change.
-- Validate and pin the model against Nebius's current catalog rather than carrying over
-  an unverified default from the original starter.
+- Extend live validation beyond one 6-query session — run the golden set (and a larger
+  one) repeatedly over time to catch intermittent tool-calling failures a single run
+  wouldn't surface, and add an automated check that fails loudly if `with_structured_output`
+  ever returns `None` in production rather than only in this diagnostic session.
 
 ## Value
 

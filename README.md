@@ -86,7 +86,9 @@ call accounting, fail-safe handling when the judge's output can't be matched to 
 claims it was given, the bounded resynthesis state machine (asserted to fire at most
 once and never re-invoke the judge), and that an invalid citation can't remain visible in
 the rendered answer. It's intentionally scoped to this deterministic logic rather than
-exhaustive coverage — there is no live-API integration test yet.
+exhaustive coverage — there is no automated live-API integration test yet, though the
+pipeline has been manually validated against live Tavily/Nebius APIs (see Evaluation
+below and `STATEMENT.md`).
 
 ## Evaluation
 
@@ -103,8 +105,19 @@ mechanism used for debugging, not a separate instrumentation path — printing p
 verdicts, latency, and whether resynthesis fired, plus an aggregate initial-faithfulness
 percentage.
 
-**This has not been run yet** — no keys have been available so far. No results are
-reported here; see `STATEMENT.md` for the caveat.
+**Real results from a live run** (6 queries, 35 total claims):
+
+| category | queries | resynthesized | notes |
+|---|---|---|---|
+| compound | 2 | 2/2 | planner used 1 well-targeted query per question rather than splitting — a valid judgment call, see `STATEMENT.md` |
+| simple | 2 | 1/2 | |
+| thin_evidence | 2 | 0/2 | produced few, cautious claims rather than fabricating specifics |
+
+Initial faithfulness rate: **31/35 (89%)** claims judged `supported` on first pass.
+Zero judge-format mismatches and zero nonexistent citations occurred. Latency ranged
+~4-22s per query, mostly driven by the judge and (when triggered) resynthesize calls.
+Full detail, including a real overclaim the judge caught and resynthesis corrected, is in
+`STATEMENT.md`.
 
 ## Observability
 

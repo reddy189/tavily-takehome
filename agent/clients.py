@@ -17,7 +17,7 @@ from tavily import TavilyClient
 
 from agent.models import PlannedQuery
 
-DEFAULT_MODEL = "moonshotai/Kimi-K2.6"
+DEFAULT_MODEL = "Qwen/Qwen3-235B-A22B-Instruct-2507"
 DEFAULT_MAX_RESULTS = 6
 
 T = TypeVar("T", bound=BaseModel)
