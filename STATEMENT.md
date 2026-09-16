@@ -176,12 +176,4 @@ only creates the opportunity for it to.
 
 ## Value
 
-For a customer evaluating Tavily for a production research or assistant use case, the
-most common trust-breaking failure in a search-grounded system is a citation that's
-fabricated or doesn't actually say what the answer claims. This project is a concrete,
-inexpensive pattern (bounded LLM call count, no new infrastructure, no vector store or
-new tracing platform required) for making that failure mode visible and largely
-self-correcting, backed by a repeatable evaluation harness to measure it and
-observability to debug it — the kind of pattern worth showing a customer building a
-production research assistant on Tavily, not a demo that only happens to work on one
-example query.
+For a customer evaluating Tavily for a production research or assistant use case, a particularly damaging failure is an answer that appears grounded but cites evidence that is fabricated or does not actually support the claim. This project provides a concrete, inexpensive pattern—bounded LLM call count, no new infrastructure, no vector store or new tracing platform required—for making that failure mode visible and largely self-correcting, backed by a repeatable evaluation harness to measure it and observability to debug it. The result is a pattern that can be shown to a customer building a production research assistant on Tavily, rather than a demo that only happens to work on one example query.
