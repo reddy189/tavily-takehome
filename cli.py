@@ -1,15 +1,3 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#   "langchain>=1.0.0",
-#   "langchain-nebius>=0.1.0",
-#   "tavily-python>=0.7.0",
-#   "pydantic>=2.7",
-#   "python-dotenv>=1.0.0",
-#   "rich>=13.0.0",
-#   "typer>=0.12.0",
-# ]
-# ///
 """
 Grounded research CLI built on Tavily.
 
